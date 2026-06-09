@@ -18,6 +18,9 @@ require('./config/database');
 
 const app = express();
 
+// Trust Hostinger's reverse proxy (required for express-rate-limit and real IP detection)
+app.set('trust proxy', 1);
+
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: config.frontendUrl, credentials: true }));
 app.use(compression());
