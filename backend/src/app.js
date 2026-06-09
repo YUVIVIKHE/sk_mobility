@@ -48,7 +48,23 @@ app.use(`${config.apiPrefix}/auth`, authRoutes);
 app.use(`${config.apiPrefix}/dealers`, dealerRoutes);
 app.use(config.apiPrefix, routes);
 
-app.use(notFound);
+// API 404 handler - only for unmatched /api routes
+app.use(`${config.apiPrefix}`, notFound);
+
+// Serve React frontend from public/ directory (production)
+const publicPath = path.join(process.cwd(), 'public');
+app.use(express.static(publicPath));
+
+// SPA fallback — serve index.html for all non-API routes (React Router)
+app.get('*', (req, res) => {
+  const indexFile = path.join(publicPath, 'index.html');
+  res.sendFile(indexFile, (err) => {
+    if (err) {
+      res.status(404).json({ success: false, message: 'Frontend not found' });
+    }
+  });
+});
+
 app.use(errorHandler);
 
 module.exports = app;
