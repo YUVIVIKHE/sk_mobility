@@ -2,28 +2,32 @@ const db = require('../config/database');
 const XLSX = require('xlsx');
 
 const getSuperAdminDashboard = async () => {
-  const [stats] = await db.query(`
-    SELECT
-      (SELECT COUNT(*) FROM dealers WHERE status = 'approved') AS total_dealers,
-      (SELECT COUNT(*) FROM orders WHERE status = 'delivered') AS total_vehicles_sold,
-      (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed') AS total_revenue,
-      (SELECT COUNT(*) FROM leads) AS total_leads,
-      (SELECT COUNT(*) FROM service_requests WHERE status IN ('requested','scheduled','in_progress')) AS service_requests,
-      (SELECT COUNT(*) FROM inventory WHERE quantity <= low_stock_threshold) AS low_stock_items
-  `);
+  const [
+    [statsRows],
+    [monthlySales],
+    [recentOrders],
+  ] = await Promise.all([
+    db.query(`
+      SELECT
+        (SELECT COUNT(*) FROM dealers WHERE status = 'approved') AS total_dealers,
+        (SELECT COUNT(*) FROM orders WHERE status = 'delivered') AS total_vehicles_sold,
+        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed') AS total_revenue,
+        (SELECT COUNT(*) FROM leads) AS total_leads,
+        (SELECT COUNT(*) FROM service_requests WHERE status IN ('requested','scheduled','in_progress')) AS service_requests,
+        (SELECT COUNT(*) FROM inventory WHERE quantity <= low_stock_threshold) AS low_stock_items
+    `),
+    db.query(`
+      SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS orders, SUM(total_amount) AS revenue
+      FROM orders WHERE status != 'cancelled' AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY month ORDER BY month
+    `),
+    db.query(`
+      SELECT o.order_number, o.total_amount, o.status, d.business_name
+      FROM orders o JOIN dealers d ON o.dealer_id = d.id ORDER BY o.created_at DESC LIMIT 10
+    `),
+  ]);
 
-  const [monthlySales] = await db.query(`
-    SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS orders, SUM(total_amount) AS revenue
-    FROM orders WHERE status != 'cancelled' AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-    GROUP BY month ORDER BY month
-  `);
-
-  const [recentOrders] = await db.query(`
-    SELECT o.order_number, o.total_amount, o.status, d.business_name
-    FROM orders o JOIN dealers d ON o.dealer_id = d.id ORDER BY o.created_at DESC LIMIT 10
-  `);
-
-  return { stats: stats[0], monthlySales, recentOrders };
+  return { stats: statsRows[0], monthlySales, recentOrders };
 };
 
 const getDealerDashboard = async (dealerId) => {

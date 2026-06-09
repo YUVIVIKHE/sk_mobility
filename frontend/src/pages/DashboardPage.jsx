@@ -1,4 +1,4 @@
-import { Box, Grid, Typography, Paper, Chip, CircularProgress, Alert } from '@mui/material';
+import { Box, Grid, Typography, Paper, Chip, Alert, Skeleton } from '@mui/material';
 import { Store, DirectionsCar, AttachMoney, People, Build, Inventory2 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { Line } from 'react-chartjs-2';
@@ -22,18 +22,57 @@ export default function DashboardPage() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['dashboard', isAdmin ? 'admin' : 'dealer'],
     queryFn: () => (isAdmin ? dashboardAPI.admin() : dashboardAPI.dealer()).then((r) => r.data.data),
+    staleTime: 2 * 60 * 1000, // cache for 2 minutes
   });
-
-  if (isLoading) {
-    return <Box display="flex" justifyContent="center" p={8}><CircularProgress /></Box>;
-  }
 
   if (isError && !isAdmin) {
     const msg = error?.response?.data?.message || 'Unable to load dealer dashboard';
     return (
       <Box>
-        <Typography variant="h4" fontWeight={700} mb={2}>Dealer Dashboard</Typography>
+        <Box mb={3}>
+          <Typography variant="h5" fontWeight={700} color="#0f172a">My Dashboard</Typography>
+        </Box>
         <Alert severity="error">{msg}. Ask admin to link your dealer profile or approve your registration.</Alert>
+      </Box>
+    );
+  }
+
+  // Skeleton loading — show stat card placeholders while data loads
+  if (isLoading) {
+    return (
+      <Box>
+        <Box mb={3}>
+          <Skeleton width={160} height={32} />
+          <Skeleton width={260} height={20} sx={{ mt: 0.5 }} />
+        </Box>
+        <Grid container spacing={2.5} mb={3}>
+          {Array.from({ length: isAdmin ? 6 : 4 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={isAdmin ? 4 : 3} lg={isAdmin ? 2 : 3} key={i}>
+              <Box sx={{ bgcolor: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', p: 2.5 }}>
+                <Box display="flex" justifyContent="space-between" mb={2}>
+                  <Skeleton width={80} height={16} />
+                  <Skeleton variant="rounded" width={38} height={38} sx={{ borderRadius: '10px' }} />
+                </Box>
+                <Skeleton width={90} height={40} sx={{ mb: 1 }} />
+                <Skeleton width={120} height={14} />
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+        <Grid container spacing={2.5}>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ bgcolor: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', p: 3 }}>
+              <Skeleton width={160} height={24} sx={{ mb: 2 }} />
+              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: '8px' }} />
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Box sx={{ bgcolor: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', p: 3 }}>
+              <Skeleton width={120} height={24} sx={{ mb: 2 }} />
+              {[1,2,3,4,5].map(i => <Skeleton key={i} height={44} sx={{ mb: 0.5 }} />)}
+            </Box>
+          </Grid>
+        </Grid>
       </Box>
     );
   }
