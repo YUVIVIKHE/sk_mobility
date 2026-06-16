@@ -140,6 +140,7 @@ export const expensesAPI = {
   categories: () => api.get('/expenses/categories'),
   list: (params) => api.get('/expenses', { params }),
   create: (data) => api.post('/expenses', data),
+  update: (id, data) => api.put(`/expenses/${id}`, data),
   delete: (id) => api.delete(`/expenses/${id}`),
 };
 

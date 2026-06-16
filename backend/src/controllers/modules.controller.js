@@ -141,6 +141,7 @@ module.exports = {
   listExpenseCategories: wrap(() => bizService.listExpenseCategories().then((data) => ({ data }))),
   listExpenses: wrap((req) => bizService.listExpenses(req.query).then((data) => data)),
   createExpense: wrap((req) => bizService.createExpense(req.body).then((data) => ({ data }))),
+  updateExpense: wrap((req) => bizService.updateExpense(req.params.id, req.body).then((data) => ({ data }))),
   deleteExpense: wrap((req) => bizService.deleteExpense(req.params.id).then(() => ({ data: { message: 'Deleted' } }))),
 
   // Bank & Loans

@@ -182,6 +182,19 @@ const deleteExpense = async (id) => {
   await db.query('DELETE FROM office_expenses WHERE id = ?', [id]);
 };
 
+const updateExpense = async (id, body) => {
+  const fields = ['category_id', 'amount', 'date', 'description', 'paid_by'];
+  const updates = fields.filter(f => body[f] !== undefined).map(f => `${f} = ?`);
+  const vals = fields.filter(f => body[f] !== undefined).map(f => body[f]);
+  if (!updates.length) throw new Error('No fields to update');
+  await db.query(`UPDATE office_expenses SET ${updates.join(', ')} WHERE id = ?`, [...vals, id]);
+  const [[exp]] = await db.query(
+    'SELECT oe.*, ec.name AS category_name FROM office_expenses oe LEFT JOIN expense_categories ec ON oe.category_id = ec.id WHERE oe.id = ?',
+    [id]
+  );
+  return exp;
+};
+
 const getExpenseStats = async () => {
   const [[stats]] = await db.query(`
     SELECT
@@ -266,7 +279,7 @@ module.exports = {
   listPartners, createPartner, listPartnerTransactions,
   listAllTransactions, createPartnerTransaction, getPartnerStats,
   // Expenses
-  listExpenseCategories, listExpenses, createExpense, deleteExpense, getExpenseStats,
+  listExpenseCategories, listExpenses, createExpense, updateExpense, deleteExpense, getExpenseStats,
   // Finance
   listBankAccounts, createBankAccount, updateBankAccount,
   listLoans, createLoan, updateLoan, getFinanceStats,
