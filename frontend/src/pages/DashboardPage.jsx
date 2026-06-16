@@ -1,5 +1,5 @@
-import { Box, Grid, Typography, Paper, Chip, Alert, Skeleton } from '@mui/material';
-import { Store, DirectionsCar, AttachMoney, People, Build, Inventory2 } from '@mui/icons-material';
+import { Box, Grid, Typography, Paper, Chip, Alert, Skeleton, Divider } from '@mui/material';
+import { Store, DirectionsCar, AttachMoney, People, Build, Inventory2, AccountBalance, TrendingDown, CalendarMonth, Badge } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
@@ -116,7 +116,8 @@ export default function DashboardPage() {
         </Typography>
       </Box>
 
-      <Grid container spacing={2.5} mb={3}>
+      {/* Row 1 — Core business KPIs */}
+      <Grid container spacing={2.5} mb={2.5}>
         {isAdmin ? (
           <>
             <Grid item xs={12} sm={6} md={4} lg={2}>
@@ -155,6 +156,66 @@ export default function DashboardPage() {
           </>
         )}
       </Grid>
+
+      {/* Row 2 — HR / Finance / Expenses (admin only) */}
+      {isAdmin && (
+        <>
+          <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+            <Divider sx={{ flex: 1 }} />
+            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ whiteSpace: 'nowrap', letterSpacing: 1, textTransform: 'uppercase' }}>
+              HR · Finance · Operations
+            </Typography>
+            <Divider sx={{ flex: 1 }} />
+          </Box>
+          <Grid container spacing={2.5} mb={3}>
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+              <StatCard
+                title="Monthly Payroll"
+                value={`₹${Number(stats.total_monthly_payroll || 0).toLocaleString('en-IN')}`}
+                subtitle={`${stats.active_employees || 0} active employees`}
+                icon={<Badge sx={{ fontSize: 20 }} />}
+                color="#0ea5e9"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+              <StatCard
+                title="Bank Balance"
+                value={`₹${Number(stats.total_bank_balance || 0).toLocaleString('en-IN')}`}
+                subtitle="All accounts combined"
+                icon={<AccountBalance sx={{ fontSize: 20 }} />}
+                color="#10b981"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+              <StatCard
+                title="Expenses This Month"
+                value={`₹${Number(stats.expenses_this_month || 0).toLocaleString('en-IN')}`}
+                subtitle={new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
+                icon={<CalendarMonth sx={{ fontSize: 20 }} />}
+                color="#f59e0b"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+              <StatCard
+                title="Outstanding Loans"
+                value={`₹${Number(stats.total_outstanding_loans || 0).toLocaleString('en-IN')}`}
+                subtitle="Total remaining across all loans"
+                icon={<TrendingDown sx={{ fontSize: 20 }} />}
+                color="#ef4444"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+              <StatCard
+                title="Net Position"
+                value={`₹${Math.max(0, Number(stats.total_bank_balance || 0) - Number(stats.total_outstanding_loans || 0)).toLocaleString('en-IN')}`}
+                subtitle="Bank balance minus loans"
+                icon={<AttachMoney sx={{ fontSize: 20 }} />}
+                color={Number(stats.total_bank_balance || 0) >= Number(stats.total_outstanding_loans || 0) ? '#10b981' : '#ef4444'}
+              />
+            </Grid>
+          </Grid>
+        </>
+      )}
 
       {isAdmin && data?.monthlySales?.length > 0 && (
         <Paper sx={{ p: 3, mb: 3 }}>

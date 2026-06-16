@@ -14,7 +14,13 @@ const getSuperAdminDashboard = async () => {
         (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed') AS total_revenue,
         (SELECT COUNT(*) FROM leads) AS total_leads,
         (SELECT COUNT(*) FROM service_requests WHERE status IN ('requested','scheduled','in_progress')) AS service_requests,
-        (SELECT COUNT(*) FROM inventory WHERE quantity <= low_stock_threshold) AS low_stock_items
+        (SELECT COUNT(*) FROM inventory WHERE quantity <= low_stock_threshold) AS low_stock_items,
+        (SELECT COALESCE(SUM(salary), 0) FROM employees WHERE status = 'active') AS total_monthly_payroll,
+        (SELECT COUNT(*) FROM employees WHERE status = 'active') AS active_employees,
+        (SELECT COALESCE(SUM(balance), 0) FROM bank_accounts) AS total_bank_balance,
+        (SELECT COALESCE(SUM(amount), 0) FROM office_expenses
+          WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())) AS expenses_this_month,
+        (SELECT COALESCE(SUM(remaining_amount), 0) FROM loans WHERE status = 'active') AS total_outstanding_loans
     `),
     db.query(`
       SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS orders, SUM(total_amount) AS revenue
