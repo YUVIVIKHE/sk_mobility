@@ -42,6 +42,14 @@ const updateEmployee = async (id, body) => {
   return emp;
 };
 
+const deleteEmployee = async (id) => {
+  await db.query('DELETE FROM employees WHERE id = ?', [id]);
+};
+
+const deleteSalaryRecord = async (id) => {
+  await db.query('DELETE FROM salary_records WHERE id = ?', [id]);
+};
+
 const listSalaryRecords = async (employeeId) => {
   const [rows] = await db.query(
     `SELECT sr.*, CONCAT(e.first_name,' ',e.last_name) AS employee_name, e.employee_code
@@ -92,6 +100,34 @@ const createPartner = async (body) => {
   const [result] = await db.query('INSERT INTO partners (name,type,phone,email,notes) VALUES (?,?,?,?,?)', [name, type, phone, email, notes]);
   const [[p]] = await db.query('SELECT * FROM partners WHERE id = ?', [result.insertId]);
   return p;
+};
+
+const updatePartner = async (id, body) => {
+  const fields = ['name','type','phone','email','notes'];
+  const updates = fields.filter(f => body[f] !== undefined).map(f => `${f} = ?`);
+  const vals = fields.filter(f => body[f] !== undefined).map(f => body[f]);
+  if (!updates.length) throw new Error('No fields to update');
+  await db.query(`UPDATE partners SET ${updates.join(', ')} WHERE id = ?`, [...vals, id]);
+  const [[p]] = await db.query('SELECT * FROM partners WHERE id = ?', [id]);
+  return p;
+};
+
+const deletePartner = async (id) => {
+  await db.query('DELETE FROM partners WHERE id = ?', [id]);
+};
+
+const updatePartnerTransaction = async (id, body) => {
+  const fields = ['partner_id','type','amount','date','description'];
+  const updates = fields.filter(f => body[f] !== undefined).map(f => `${f} = ?`);
+  const vals = fields.filter(f => body[f] !== undefined).map(f => body[f]);
+  if (!updates.length) throw new Error('No fields to update');
+  await db.query(`UPDATE partner_transactions SET ${updates.join(', ')} WHERE id = ?`, [...vals, id]);
+  const [[tx]] = await db.query('SELECT pt.*, p.name AS partner_name FROM partner_transactions pt JOIN partners p ON pt.partner_id = p.id WHERE pt.id = ?', [id]);
+  return tx;
+};
+
+const deletePartnerTransaction = async (id) => {
+  await db.query('DELETE FROM partner_transactions WHERE id = ?', [id]);
 };
 
 const listPartnerTransactions = async (partnerId) => {
@@ -223,6 +259,10 @@ const createBankAccount = async (body) => {
   return acc;
 };
 
+const deleteBankAccount = async (id) => {
+  await db.query('DELETE FROM bank_accounts WHERE id = ?', [id]);
+};
+
 const updateBankAccount = async (id, body) => {
   const fields = ['bank_name','account_number','account_type','balance','notes'];
   const updates = fields.filter(f => body[f] !== undefined).map(f => `${f} = ?`);
@@ -251,6 +291,10 @@ const createLoan = async (body) => {
   return loan;
 };
 
+const deleteLoan = async (id) => {
+  await db.query('DELETE FROM loans WHERE id = ?', [id]);
+};
+
 const updateLoan = async (id, body) => {
   const fields = ['lender_name','loan_type','outstanding_amount','interest_rate','emi_amount','emi_date','status','notes'];
   const updates = fields.filter(f => body[f] !== undefined).map(f => `${f} = ?`);
@@ -273,14 +317,16 @@ const getFinanceStats = async () => {
 
 module.exports = {
   // HR
-  listEmployees, createEmployee, updateEmployee,
-  listSalaryRecords, createSalaryRecord, getHRStats,
+  listEmployees, createEmployee, updateEmployee, deleteEmployee,
+  listSalaryRecords, createSalaryRecord, deleteSalaryRecord, getHRStats,
   // Partners
-  listPartners, createPartner, listPartnerTransactions,
-  listAllTransactions, createPartnerTransaction, getPartnerStats,
+  listPartners, createPartner, updatePartner, deletePartner,
+  listPartnerTransactions, listAllTransactions,
+  createPartnerTransaction, updatePartnerTransaction, deletePartnerTransaction,
+  getPartnerStats,
   // Expenses
   listExpenseCategories, listExpenses, createExpense, updateExpense, deleteExpense, getExpenseStats,
   // Finance
-  listBankAccounts, createBankAccount, updateBankAccount,
-  listLoans, createLoan, updateLoan, getFinanceStats,
+  listBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount,
+  listLoans, createLoan, updateLoan, deleteLoan, getFinanceStats,
 };

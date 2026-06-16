@@ -122,17 +122,23 @@ export const hrAPI = {
   employees: (params) => api.get('/hr/employees', { params }),
   createEmployee: (data) => api.post('/hr/employees', data),
   updateEmployee: (id, data) => api.put(`/hr/employees/${id}`, data),
+  deleteEmployee: (id) => api.delete(`/hr/employees/${id}`),
   salaries: (employeeId) => api.get(`/hr/employees/${employeeId}/salaries`),
   createSalary: (data) => api.post('/hr/salaries', data),
+  deleteSalary: (id) => api.delete(`/hr/salaries/${id}`),
 };
 
 export const partnersAPI = {
   stats: () => api.get('/partners/stats'),
   list: () => api.get('/partners'),
   create: (data) => api.post('/partners', data),
+  update: (id, data) => api.put(`/partners/${id}`, data),
+  delete: (id) => api.delete(`/partners/${id}`),
   transactions: (partnerId) => api.get(`/partners/${partnerId}/transactions`),
   allTransactions: (params) => api.get('/partner-transactions', { params }),
   createTransaction: (data) => api.post('/partner-transactions', data),
+  updateTransaction: (id, data) => api.put(`/partner-transactions/${id}`, data),
+  deleteTransaction: (id) => api.delete(`/partner-transactions/${id}`),
 };
 
 export const expensesAPI = {
@@ -149,7 +155,9 @@ export const financeAPI = {
   bankAccounts: () => api.get('/finance/bank-accounts'),
   createBankAccount: (data) => api.post('/finance/bank-accounts', data),
   updateBankAccount: (id, data) => api.put(`/finance/bank-accounts/${id}`, data),
+  deleteBankAccount: (id) => api.delete(`/finance/bank-accounts/${id}`),
   loans: () => api.get('/finance/loans'),
   createLoan: (data) => api.post('/finance/loans', data),
   updateLoan: (id, data) => api.put(`/finance/loans/${id}`, data),
+  deleteLoan: (id) => api.delete(`/finance/loans/${id}`),
 };

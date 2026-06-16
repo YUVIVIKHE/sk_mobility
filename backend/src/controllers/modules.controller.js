@@ -125,16 +125,22 @@ module.exports = {
   listEmployees: wrap((req) => bizService.listEmployees(req.query).then((data) => data)),
   createEmployee: wrap((req) => bizService.createEmployee(req.body).then((data) => ({ data }))),
   updateEmployee: wrap((req) => bizService.updateEmployee(req.params.id, req.body).then((data) => ({ data }))),
+  deleteEmployee: wrap((req) => bizService.deleteEmployee(req.params.id).then(() => ({ data: { message: 'Deleted' } }))),
   listSalaryRecords: wrap((req) => bizService.listSalaryRecords(req.params.employeeId).then((data) => ({ data }))),
   createSalaryRecord: wrap((req) => bizService.createSalaryRecord(req.body).then((data) => ({ data }))),
+  deleteSalaryRecord: wrap((req) => bizService.deleteSalaryRecord(req.params.id).then(() => ({ data: { message: 'Deleted' } }))),
 
   // Partner Transactions
   partnerStats: wrap(() => bizService.getPartnerStats().then((data) => ({ data }))),
   listPartners: wrap(() => bizService.listPartners().then((data) => ({ data }))),
   createPartner: wrap((req) => bizService.createPartner(req.body).then((data) => ({ data }))),
+  updatePartner: wrap((req) => bizService.updatePartner(req.params.id, req.body).then((data) => ({ data }))),
+  deletePartner: wrap((req) => bizService.deletePartner(req.params.id).then(() => ({ data: { message: 'Deleted' } }))),
   listPartnerTransactions: wrap((req) => bizService.listPartnerTransactions(req.params.partnerId).then((data) => ({ data }))),
   listAllTransactions: wrap((req) => bizService.listAllTransactions(req.query).then((data) => data)),
   createPartnerTransaction: wrap((req) => bizService.createPartnerTransaction(req.body).then((data) => ({ data }))),
+  updatePartnerTransaction: wrap((req) => bizService.updatePartnerTransaction(req.params.id, req.body).then((data) => ({ data }))),
+  deletePartnerTransaction: wrap((req) => bizService.deletePartnerTransaction(req.params.id).then(() => ({ data: { message: 'Deleted' } }))),
 
   // Office Expenses
   expenseStats: wrap(() => bizService.getExpenseStats().then((data) => ({ data }))),
@@ -149,7 +155,9 @@ module.exports = {
   listBankAccounts: wrap(() => bizService.listBankAccounts().then((data) => ({ data }))),
   createBankAccount: wrap((req) => bizService.createBankAccount(req.body).then((data) => ({ data }))),
   updateBankAccount: wrap((req) => bizService.updateBankAccount(req.params.id, req.body).then((data) => ({ data }))),
+  deleteBankAccount: wrap((req) => bizService.deleteBankAccount(req.params.id).then(() => ({ data: { message: 'Deleted' } }))),
   listLoans: wrap(() => bizService.listLoans().then((data) => ({ data }))),
   createLoan: wrap((req) => bizService.createLoan(req.body).then((data) => ({ data }))),
   updateLoan: wrap((req) => bizService.updateLoan(req.params.id, req.body).then((data) => ({ data }))),
+  deleteLoan: wrap((req) => bizService.deleteLoan(req.params.id).then(() => ({ data: { message: 'Deleted' } }))),
 };
