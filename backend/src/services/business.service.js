@@ -12,10 +12,12 @@ const listEmployees = async (query = {}) => {
   if (search) { where.push('(first_name LIKE ? OR last_name LIKE ? OR employee_code LIKE ? OR designation LIKE ?)'); const s = `%${search}%`; params.push(s, s, s, s); }
 
   const whereStr = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const [[{ total }], rows] = await Promise.all([
+  const [countResult, dataResult] = await Promise.all([
     db.query(`SELECT COUNT(*) as total FROM employees ${whereStr}`, params),
     db.query(`SELECT * FROM employees ${whereStr} ORDER BY created_at DESC LIMIT ? OFFSET ?`, [...params, Number(limit), offset]),
   ]);
+  const total = countResult[0][0].total;
+  const rows = dataResult[0];
   return { data: rows, total, page: Number(page), limit: Number(limit) };
 };
 
@@ -141,12 +143,14 @@ const listPartnerTransactions = async (partnerId) => {
 const listAllTransactions = async (query = {}) => {
   const { page = 1, limit = 50 } = query;
   const offset = (page - 1) * limit;
-  const [[{ total }], rows] = await Promise.all([
+  const [countResult, dataResult] = await Promise.all([
     db.query('SELECT COUNT(*) as total FROM partner_transactions'),
     db.query(`SELECT pt.*, p.name AS partner_name, p.type AS partner_type
       FROM partner_transactions pt JOIN partners p ON pt.partner_id = p.id
       ORDER BY pt.date DESC LIMIT ? OFFSET ?`, [Number(limit), offset]),
   ]);
+  const total = countResult[0][0].total;
+  const rows = dataResult[0];
   return { data: rows, total };
 };
 
@@ -208,7 +212,7 @@ const listExpenses = async (query = {}) => {
   if (year) { where.push('YEAR(oe.date) = ?'); params.push(year); }
 
   const whereStr = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const [[{ total }], rows] = await Promise.all([
+  const [countResult, dataResult] = await Promise.all([
     db.query(`SELECT COUNT(*) as total FROM office_expenses oe ${whereStr}`, params),
     db.query(
       `SELECT oe.*, ec.name AS category_name FROM office_expenses oe
@@ -217,6 +221,8 @@ const listExpenses = async (query = {}) => {
       [...params, Number(limit), offset]
     ),
   ]);
+  const total = countResult[0][0].total;
+  const rows = dataResult[0];
   return { data: rows, total };
 };
 
