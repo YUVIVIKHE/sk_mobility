@@ -14,43 +14,73 @@ const sparklinePath = (values, w = 80, h = 32) => {
   return `M ${pts.join(' L ')}`;
 };
 
+// Derive a soft bg and darker text color from the accent color
+const makeStyle = (color) => ({
+  iconBg: `${color}18`,
+  iconColor: color,
+  accentBg: `${color}09`,
+});
+
 export default function StatCard({ title, value, subtitle, icon, color = '#6366f1', trend, loading, sparkline }) {
   if (loading) {
     return (
       <Box sx={{ bgcolor: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', p: 2.5 }}>
-        <Skeleton height={16} width="60%" sx={{ mb: 1 }} />
-        <Skeleton height={36} width="80%" sx={{ mb: 1 }} />
-        <Skeleton height={32} />
+        <Box display="flex" justifyContent="space-between" mb={2}>
+          <Skeleton width={80} height={14} />
+          <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '12px' }} />
+        </Box>
+        <Skeleton width={90} height={38} sx={{ mb: 1 }} />
+        <Skeleton width={120} height={14} />
       </Box>
     );
   }
 
-  const bgLight = `${color}14`;
+  const s = makeStyle(color);
 
   return (
     <Box sx={{
       bgcolor: '#fff',
-      border: '1px solid #f1f5f9',
-      borderRadius: '16px',
+      border: '1px solid',
+      borderColor: 'rgba(226,232,240,0.8)',
+      borderRadius: '18px',
       p: 2.5,
       height: '100%',
-      transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'box-shadow 0.25s ease, transform 0.25s ease',
       '&:hover': {
-        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+        boxShadow: `0 8px 28px rgba(0,0,0,0.09), 0 2px 8px ${color}22`,
         transform: 'translateY(-2px)',
+        borderColor: `${color}30`,
       },
+      // subtle top accent bar
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0, left: 0, right: 0, height: '3px',
+        background: `linear-gradient(90deg, ${color} 0%, ${color}66 100%)`,
+        borderRadius: '18px 18px 0 0',
+        opacity: 0,
+        transition: 'opacity 0.25s ease',
+      },
+      '&:hover::before': { opacity: 1 },
     }}>
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-        <Typography sx={{ fontSize: '13px', fontWeight: 500, color: '#64748b', lineHeight: 1.4 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2.5}>
+        <Typography sx={{
+          fontSize: '12.5px', fontWeight: 600, color: '#64748b',
+          lineHeight: 1.4, letterSpacing: '0.02em', textTransform: 'uppercase',
+        }}>
           {title}
         </Typography>
         {icon && (
           <Box sx={{
-            width: 38, height: 38, borderRadius: '10px',
-            bgcolor: bgLight,
+            width: 42, height: 42, borderRadius: '12px',
+            bgcolor: s.iconBg,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color,
+            color: s.iconColor,
             flexShrink: 0,
+            transition: 'transform 0.2s ease',
+            '&:hover': { transform: 'scale(1.1)' },
           }}>
             {icon}
           </Box>
@@ -58,11 +88,11 @@ export default function StatCard({ title, value, subtitle, icon, color = '#6366f
       </Box>
 
       <Typography sx={{
-        fontSize: { xs: '1.5rem', sm: '1.75rem' },
-        fontWeight: 700,
+        fontSize: { xs: '1.65rem', sm: '1.9rem' },
+        fontWeight: 800,
         color: '#0f172a',
-        lineHeight: 1.1,
-        letterSpacing: '-0.02em',
+        lineHeight: 1.05,
+        letterSpacing: '-0.03em',
         mb: 0.75,
         wordBreak: 'break-word',
       }}>
@@ -70,21 +100,28 @@ export default function StatCard({ title, value, subtitle, icon, color = '#6366f
       </Typography>
 
       {subtitle && (
-        <Typography sx={{ fontSize: '12px', color: '#94a3b8' }}>{subtitle}</Typography>
+        <Typography sx={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500, mb: 0.5 }}>
+          {subtitle}
+        </Typography>
       )}
 
       <Box display="flex" alignItems="center" justifyContent="space-between" mt={1.5}>
         {trend !== undefined ? (
-          <Box display="flex" alignItems="center" gap={0.5}>
+          <Box display="flex" alignItems="center" gap={0.5}
+            sx={{
+              bgcolor: trend >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+              borderRadius: '6px', px: 0.75, py: 0.25,
+            }}
+          >
             {trend >= 0
-              ? <TrendingUp sx={{ fontSize: 14, color: '#10b981' }} />
-              : <TrendingDown sx={{ fontSize: 14, color: '#ef4444' }} />
+              ? <TrendingUp sx={{ fontSize: 13, color: '#10b981' }} />
+              : <TrendingDown sx={{ fontSize: 13, color: '#ef4444' }} />
             }
             <Typography sx={{
-              fontSize: '12px', fontWeight: 600,
-              color: trend >= 0 ? '#10b981' : '#ef4444',
+              fontSize: '11.5px', fontWeight: 700,
+              color: trend >= 0 ? '#059669' : '#dc2626',
             }}>
-              {trend >= 0 ? '+' : ''}{Math.abs(trend)}% from last month
+              {trend >= 0 ? '+' : ''}{Math.abs(trend)}% vs last month
             </Typography>
           </Box>
         ) : <Box />}
@@ -99,6 +136,7 @@ export default function StatCard({ title, value, subtitle, icon, color = '#6366f
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              opacity={0.7}
             />
           </svg>
         )}

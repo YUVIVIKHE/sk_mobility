@@ -1,28 +1,77 @@
 import { Box, Grid, Typography, Paper, Chip, Alert, Skeleton, Divider } from '@mui/material';
-import { Store, DirectionsCar, AttachMoney, People, Build, Inventory2, AccountBalance, TrendingDown, CalendarMonth, Badge } from '@mui/icons-material';
+import {
+  Store, DirectionsCar, AttachMoney, People, Build, Inventory2,
+  AccountBalance, TrendingDown, CalendarMonth, Badge,
+  WbSunny, WbCloudy, Nightlight,
+} from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+import { Line, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
+  BarElement, Title, Tooltip, Legend, Filler,
+} from 'chart.js';
 import StatCard from '../components/StatCard';
 import DataTable from '../components/DataTable';
 import { dashboardAPI } from '../services';
 import { useAuth, isSuperAdmin } from '../hooks/useAuth';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
 const statusColors = {
   pending: 'warning', approved: 'info', processing: 'primary',
   shipped: 'secondary', delivered: 'success', cancelled: 'error',
 };
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return { text: 'Good morning', Icon: WbSunny, color: '#f59e0b' };
+  if (h < 17) return { text: 'Good afternoon', Icon: WbCloudy, color: '#0ea5e9' };
+  return { text: 'Good evening', Icon: Nightlight, color: '#6366f1' };
+}
+
+const CHART_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#0f172a',
+      titleFont: { family: 'Inter', size: 12, weight: '600' },
+      bodyFont: { family: 'Inter', size: 13 },
+      padding: 12,
+      cornerRadius: 10,
+      callbacks: {
+        label: (ctx) => ` ₹${Number(ctx.parsed.y).toLocaleString('en-IN')}`,
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: { display: false },
+      border: { display: false },
+      ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' },
+    },
+    y: {
+      grid: { color: 'rgba(226,232,240,0.6)', drawBorder: false },
+      border: { display: false, dash: [4, 4] },
+      ticks: {
+        font: { family: 'Inter', size: 11 },
+        color: '#94a3b8',
+        callback: (v) => `₹${Number(v).toLocaleString('en-IN')}`,
+      },
+    },
+  },
+};
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const isAdmin = isSuperAdmin(user);
+  const { text: greeting, Icon: GreetIcon, color: gColor } = getGreeting();
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['dashboard', isAdmin ? 'admin' : 'dealer'],
     queryFn: () => (isAdmin ? dashboardAPI.admin() : dashboardAPI.dealer()).then((r) => r.data.data),
-    staleTime: 2 * 60 * 1000, // cache for 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 
   if (isError && !isAdmin) {
@@ -37,39 +86,36 @@ export default function DashboardPage() {
     );
   }
 
-  // Skeleton loading — show stat card placeholders while data loads
   if (isLoading) {
     return (
       <Box>
-        <Box mb={3}>
-          <Skeleton width={160} height={32} />
-          <Skeleton width={260} height={20} sx={{ mt: 0.5 }} />
-        </Box>
+        <Skeleton width={240} height={40} sx={{ mb: 0.5 }} />
+        <Skeleton width={320} height={20} sx={{ mb: 3 }} />
         <Grid container spacing={2.5} mb={3}>
-          {Array.from({ length: isAdmin ? 6 : 4 }).map((_, i) => (
-            <Grid item xs={12} sm={6} md={isAdmin ? 4 : 3} lg={isAdmin ? 2 : 3} key={i}>
-              <Box sx={{ bgcolor: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', p: 2.5 }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Grid item xs={12} sm={6} md={4} lg={2} key={i}>
+              <Box sx={{ bgcolor: '#fff', borderRadius: '18px', p: 2.5, border: '1px solid #f1f5f9' }}>
                 <Box display="flex" justifyContent="space-between" mb={2}>
-                  <Skeleton width={80} height={16} />
-                  <Skeleton variant="rounded" width={38} height={38} sx={{ borderRadius: '10px' }} />
+                  <Skeleton width={70} height={14} />
+                  <Skeleton variant="rounded" width={42} height={42} sx={{ borderRadius: '12px' }} />
                 </Box>
-                <Skeleton width={90} height={40} sx={{ mb: 1 }} />
-                <Skeleton width={120} height={14} />
+                <Skeleton width={90} height={42} sx={{ mb: 0.75 }} />
+                <Skeleton width={110} height={14} />
               </Box>
             </Grid>
           ))}
         </Grid>
         <Grid container spacing={2.5}>
           <Grid item xs={12} md={8}>
-            <Box sx={{ bgcolor: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', p: 3 }}>
-              <Skeleton width={160} height={24} sx={{ mb: 2 }} />
-              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: '8px' }} />
+            <Box sx={{ bgcolor: '#fff', borderRadius: '18px', p: 3, border: '1px solid #f1f5f9' }}>
+              <Skeleton width={160} height={24} sx={{ mb: 2.5 }} />
+              <Skeleton variant="rectangular" height={240} sx={{ borderRadius: '10px' }} />
             </Box>
           </Grid>
           <Grid item xs={12} md={4}>
-            <Box sx={{ bgcolor: '#fff', border: '1px solid #f1f5f9', borderRadius: '16px', p: 3 }}>
+            <Box sx={{ bgcolor: '#fff', borderRadius: '18px', p: 3, border: '1px solid #f1f5f9' }}>
               <Skeleton width={120} height={24} sx={{ mb: 2 }} />
-              {[1,2,3,4,5].map(i => <Skeleton key={i} height={44} sx={{ mb: 0.5 }} />)}
+              {[1,2,3,4,5].map(i => <Skeleton key={i} height={52} sx={{ mb: 0.5, borderRadius: '10px' }} />)}
             </Box>
           </Grid>
         </Grid>
@@ -79,44 +125,117 @@ export default function DashboardPage() {
 
   const stats = data?.stats || {};
 
-  const chartData = {
-    labels: data?.monthlySales?.map((m) => m.month) || [],
+  const chartLabels = data?.monthlySales?.map((m) => {
+    const [y, mo] = m.month.split('-');
+    return new Date(y, mo - 1).toLocaleString('en-IN', { month: 'short' });
+  }) || [];
+
+  const revenueData = data?.monthlySales?.map((m) => Number(m.revenue)) || [];
+
+  const lineChartData = {
+    labels: chartLabels,
     datasets: [{
-      label: 'Revenue (₹)',
-      data: data?.monthlySales?.map((m) => m.revenue) || [],
+      label: 'Revenue',
+      data: revenueData,
       borderColor: '#6366f1',
-      backgroundColor: 'rgba(99,102,241,0.08)',
+      backgroundColor: (ctx) => {
+        const chart = ctx.chart;
+        const { ctx: c, chartArea } = chart;
+        if (!chartArea) return 'transparent';
+        const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        g.addColorStop(0, 'rgba(99,102,241,0.18)');
+        g.addColorStop(1, 'rgba(99,102,241,0)');
+        return g;
+      },
       fill: true,
-      tension: 0.4,
+      tension: 0.45,
       pointRadius: 4,
+      pointHoverRadius: 7,
       pointBackgroundColor: '#6366f1',
-      borderWidth: 2,
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      borderWidth: 2.5,
+    }],
+  };
+
+  const barChartData = {
+    labels: chartLabels,
+    datasets: [{
+      label: 'Orders',
+      data: data?.monthlySales?.map((m) => Number(m.orders)) || [],
+      backgroundColor: 'rgba(16,185,129,0.8)',
+      borderRadius: 6,
+      borderSkipped: false,
     }],
   };
 
   const orderColumns = [
-    { field: 'order_number', headerName: 'Order #', flex: 1 },
-    { field: 'business_name', headerName: 'Dealer', flex: 1 },
-    { field: 'total_amount', headerName: 'Amount', flex: 1, valueFormatter: (v) => `₹${Number(v).toLocaleString('en-IN')}` },
+    { field: 'order_number', headerName: 'Order #', flex: 1, minWidth: 130 },
+    { field: 'business_name', headerName: 'Dealer', flex: 1.5, minWidth: 150 },
     {
-      field: 'status', headerName: 'Status', flex: 1,
-      renderCell: (params) => <Chip label={params.value} color={statusColors[params.value] || 'default'} size="small" />,
+      field: 'total_amount', headerName: 'Amount', flex: 1, minWidth: 120,
+      renderCell: (params) => (
+        <Typography sx={{ fontWeight: 700, color: '#10b981', fontSize: '13px' }}>
+          ₹{Number(params.value).toLocaleString('en-IN')}
+        </Typography>
+      ),
+    },
+    {
+      field: 'status', headerName: 'Status', flex: 1, minWidth: 120,
+      renderCell: (params) => (
+        <Chip label={params.value} color={statusColors[params.value] || 'default'} size="small"
+          sx={{ textTransform: 'capitalize', fontWeight: 600 }}
+        />
+      ),
     },
   ];
 
   return (
     <Box>
-      {/* Page Header */}
-      <Box mb={3}>
-        <Typography variant="h5" fontWeight={700} color="#0f172a">
-          {isAdmin ? 'Dashboard' : 'My Dashboard'}
+      {/* ── Hero Header ── */}
+      <Box sx={{
+        mb: 4,
+        p: 3,
+        borderRadius: '20px',
+        background: 'linear-gradient(135deg, #0f1729 0%, #1e1b4b 50%, #312e81 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Background decoration */}
+        <Box sx={{
+          position: 'absolute', width: 300, height: 300, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%)',
+          top: -100, right: -50, pointerEvents: 'none',
+        }} />
+        <Box sx={{
+          position: 'absolute', width: 200, height: 200, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%)',
+          bottom: -80, left: 200, pointerEvents: 'none',
+        }} />
+
+        <Box display="flex" alignItems="center" gap={1.5} mb={1} sx={{ position: 'relative', zIndex: 1 }}>
+          <GreetIcon sx={{ fontSize: 22, color: gColor }} />
+          <Typography sx={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.65)' }}>
+            {greeting}
+          </Typography>
+        </Box>
+        <Typography sx={{
+          fontSize: { xs: '1.5rem', sm: '2rem' },
+          fontWeight: 800, color: '#fff',
+          letterSpacing: '-0.03em',
+          lineHeight: 1.2,
+          position: 'relative', zIndex: 1,
+          mb: 0.5,
+        }}>
+          {isAdmin ? 'Operations Overview' : 'My Dashboard'}
         </Typography>
-        <Typography variant="body2" color="#64748b" mt={0.5}>
-          Welcome back{user?.first_name ? `, ${user.first_name}` : ''}. Here's what's happening.
+        <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', position: 'relative', zIndex: 1 }}>
+          {user?.first_name ? `Welcome back, ${user.first_name}. ` : ''}
+          {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </Typography>
       </Box>
 
-      {/* Row 1 — Core business KPIs */}
+      {/* ── Row 1: Core KPIs ── */}
       <Grid container spacing={2.5} mb={2.5}>
         {isAdmin ? (
           <>
@@ -157,17 +276,25 @@ export default function DashboardPage() {
         )}
       </Grid>
 
-      {/* Row 2 — HR / Finance / Expenses (admin only) */}
+      {/* ── Row 2: HR / Finance (admin only) ── */}
       {isAdmin && (
         <>
-          <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-            <Divider sx={{ flex: 1 }} />
-            <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ whiteSpace: 'nowrap', letterSpacing: 1, textTransform: 'uppercase' }}>
-              HR · Finance · Operations
-            </Typography>
-            <Divider sx={{ flex: 1 }} />
+          <Box display="flex" alignItems="center" gap={2} mb={2.5}>
+            <Divider sx={{ flex: 1, borderColor: 'rgba(226,232,240,0.8)' }} />
+            <Box sx={{
+              display: 'flex', alignItems: 'center', gap: 1,
+              bgcolor: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+              borderRadius: '100px', px: 2, py: 0.5,
+            }}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#6366f1' }} />
+              <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#6366f1', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                HR · Finance · Operations
+              </Typography>
+            </Box>
+            <Divider sx={{ flex: 1, borderColor: 'rgba(226,232,240,0.8)' }} />
           </Box>
-          <Grid container spacing={2.5} mb={3}>
+
+          <Grid container spacing={2.5} mb={3.5}>
             <Grid item xs={12} sm={6} md={4} lg={2.4}>
               <StatCard
                 title="Monthly Payroll"
@@ -217,13 +344,67 @@ export default function DashboardPage() {
         </>
       )}
 
+      {/* ── Charts Row ── */}
       {isAdmin && data?.monthlySales?.length > 0 && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" fontWeight={600} mb={2}>Monthly Sales Trend</Typography>
-          <Line data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
-        </Paper>
+        <Grid container spacing={2.5} mb={3}>
+          <Grid item xs={12} lg={8}>
+            <Paper sx={{ p: 3, borderRadius: '18px', border: '1px solid rgba(226,232,240,0.8)', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: '15px', color: '#0f172a', letterSpacing: '-0.01em' }}>
+                    Revenue Trend
+                  </Typography>
+                  <Typography variant="caption" color="#64748b">Monthly revenue for the past 12 months</Typography>
+                </Box>
+                <Box sx={{
+                  bgcolor: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
+                  borderRadius: '8px', px: 1.5, py: 0.5,
+                }}>
+                  <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#6366f1' }}>12 Months</Typography>
+                </Box>
+              </Box>
+              <Box sx={{ height: 260 }}>
+                <Line data={lineChartData} options={{ ...CHART_OPTIONS, maintainAspectRatio: false }} />
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} lg={4}>
+            <Paper sx={{ p: 3, borderRadius: '18px', border: '1px solid rgba(226,232,240,0.8)', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', height: '100%' }}>
+              <Box mb={3}>
+                <Typography sx={{ fontWeight: 700, fontSize: '15px', color: '#0f172a', letterSpacing: '-0.01em' }}>
+                  Monthly Orders
+                </Typography>
+                <Typography variant="caption" color="#64748b">Order volume by month</Typography>
+              </Box>
+              <Box sx={{ height: 260 }}>
+                <Bar
+                  data={barChartData}
+                  options={{
+                    ...CHART_OPTIONS,
+                    maintainAspectRatio: false,
+                    scales: {
+                      ...CHART_OPTIONS.scales,
+                      y: {
+                        ...CHART_OPTIONS.scales.y,
+                        ticks: { ...CHART_OPTIONS.scales.y.ticks, callback: (v) => v },
+                      },
+                    },
+                    plugins: {
+                      ...CHART_OPTIONS.plugins,
+                      tooltip: {
+                        ...CHART_OPTIONS.plugins.tooltip,
+                        callbacks: { label: (ctx) => ` ${ctx.parsed.y} orders` },
+                      },
+                    },
+                  }}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
       )}
 
+      {/* ── Recent Orders ── */}
       {isAdmin && data?.recentOrders && (
         <DataTable
           title="Recent Orders"
