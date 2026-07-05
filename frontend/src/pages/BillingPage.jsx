@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
   Box, Typography, Chip, Button, Dialog, DialogTitle, DialogContent,
-  DialogActions, CircularProgress, ToggleButton, ToggleButtonGroup, Grid, TextField, Alert,
+  DialogActions, CircularProgress, Grid, TextField, Alert, Tabs, Tab, Paper,
 } from '@mui/material';
+
 import { Download, Visibility, Print, Add } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DataTable from '../components/DataTable';
@@ -35,7 +36,7 @@ const printInvoice = (containerId) => {
 
 export default function BillingPage() {
   const [previewId, setPreviewId] = useState(null);
-  const [billTypeFilter, setBillTypeFilter] = useState('all');
+  const [tab, setTab] = useState(0);
   const [warrantyOpen, setWarrantyOpen] = useState(false);
   const [wForm, setWForm] = useState({ customerName: '', customerPhone: '', customerAddress: '', customerCity: '', customerState: 'Maharashtra', stateCode: 'MH', customerAadhaar: '', customerPan: '', vehicleModel: '', chassisNo: '', motorNo: '', registrationNo: '', odometerReading: '', vehicleSaleDate: '', warrantyStart: '', warrantyEnd: '', warrantyPeriod: '24 Months', totalAmount: '', taxRate: 18, notes: '' });
   const [wError, setWError] = useState('');
@@ -79,9 +80,11 @@ export default function BillingPage() {
     return row.dealer_name || '—';
   };
 
-  const filteredData = (data || []).filter(b => {
-    if (billTypeFilter === 'all') return true;
-    return (b.bill_type || 'vehicle') === billTypeFilter;
+  const TAB_FILTERS = ['all', 'vehicle', 'warranty'];
+  const filteredData = (data || []).filter((b) => {
+    const f = TAB_FILTERS[tab];
+    if (f === 'all') return true;
+    return (b.bill_type || 'vehicle') === f;
   });
 
   const printId = previewData?.bill?.bill_type === 'warranty'
@@ -128,29 +131,49 @@ export default function BillingPage() {
     },
   ];
 
+  const vehicleCount = (data || []).filter((b) => (b.bill_type || 'vehicle') === 'vehicle').length;
+  const warrantyCount = (data || []).filter((b) => b.bill_type === 'warranty').length;
+
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1} flexWrap="wrap" gap={2}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} flexWrap="wrap" gap={2}>
         <Box>
-          <Typography variant="h4" fontWeight={700}>Billing & Invoicing</Typography>
-          <Typography color="text.secondary" mt={0.5}>
-            GST tax invoices auto-generated on order creation.
-          </Typography>
+          <Typography sx={{ fontSize: 22, fontWeight: 800, color: '#0f172a' }}>Billing & Invoicing</Typography>
+          <Typography sx={{ fontSize: 13, color: '#64748b', mt: 0.25 }}>GST tax invoices auto-generated on order creation.</Typography>
         </Box>
-        <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
-          <Button variant="outlined" startIcon={<Add />} onClick={() => setWarrantyOpen(true)}>
-            Create Warranty Certificate
-          </Button>
-          <ToggleButtonGroup value={billTypeFilter} exclusive onChange={(_, v) => v && setBillTypeFilter(v)} size="small">
-            <ToggleButton value="all">All</ToggleButton>
-            <ToggleButton value="vehicle">Vehicle Invoice</ToggleButton>
-            <ToggleButton value="warranty">Warranty</ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+        <Button variant="outlined" startIcon={<Add />} onClick={() => setWarrantyOpen(true)}
+          sx={{ borderColor: '#0d9488', color: '#0d9488', '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' } }}>
+          Create Warranty Certificate
+        </Button>
       </Box>
 
-      <Box mb={3} />
-      <DataTable rows={filteredData.map((b) => ({ id: b.id, ...b }))} columns={columns} loading={isLoading} />
+      {/* Tabs */}
+      <Paper sx={{ borderRadius: 2, overflow: 'hidden', mb: 0 }}>
+        <Box sx={{ borderBottom: '1px solid #f1f5f9', px: 2 }}>
+          <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ '& .MuiTab-root': { fontSize: 13, fontWeight: 600 } }}>
+            <Tab label={
+              <Box display="flex" alignItems="center" gap={1}>
+                All Bills
+                <Chip label={(data || []).length} size="small" sx={{ height: 18, fontSize: 10 }} />
+              </Box>
+            } />
+            <Tab label={
+              <Box display="flex" alignItems="center" gap={1}>
+                Vehicle Invoices
+                <Chip label={vehicleCount} size="small" color="primary" sx={{ height: 18, fontSize: 10 }} />
+              </Box>
+            } />
+            <Tab label={
+              <Box display="flex" alignItems="center" gap={1}>
+                Warranty Certificates
+                <Chip label={warrantyCount} size="small" color="secondary" sx={{ height: 18, fontSize: 10 }} />
+              </Box>
+            } />
+          </Tabs>
+        </Box>
+        <DataTable rows={filteredData.map((b) => ({ id: b.id, ...b }))} columns={columns} loading={isLoading} />
+      </Paper>
 
       <Dialog open={Boolean(previewId)} onClose={() => setPreviewId(null)} maxWidth="md" fullWidth
         PaperProps={{ sx: { borderRadius: '16px' } }}

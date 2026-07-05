@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert, Grid } from '@mui/material';
-import { Add, CheckCircle, Cancel } from '@mui/icons-material';
+import { Add, CheckCircle, Cancel, Visibility } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import DataTable from '../components/DataTable';
 import { dealersAPI } from '../services';
@@ -18,6 +19,7 @@ const emptyForm = {
 };
 
 export default function DealersPage() {
+  const navigate = useNavigate();
   const [approveDialog, setApproveDialog] = useState(null);
   const [addDialog, setAddDialog] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -64,11 +66,18 @@ export default function DealersPage() {
       renderCell: (p) => <Chip label={p.value} color={statusColors[p.value]} size="small" />,
     },
     {
-      field: 'actions', headerName: 'Actions', width: 180,
-      renderCell: (p) => p.row.status === 'pending' && (
-        <Box>
-          <Button size="small" startIcon={<CheckCircle />} color="success" onClick={() => setApproveDialog({ id: p.row.id, status: 'approved' })}>Approve</Button>
-          <Button size="small" startIcon={<Cancel />} color="error" onClick={() => setApproveDialog({ id: p.row.id, status: 'rejected' })}>Reject</Button>
+      field: 'actions', headerName: 'Actions', width: 230,
+      renderCell: (p) => (
+        <Box display="flex" gap={0.5} alignItems="center">
+          <Button size="small" startIcon={<Visibility sx={{ fontSize: 13 }} />}
+            onClick={() => navigate(`/dealers/${p.row.id}`)}
+            sx={{ fontSize: 11, color: '#0d9488', minWidth: 0 }}>View</Button>
+          {p.row.status === 'pending' && (
+            <>
+              <Button size="small" startIcon={<CheckCircle />} color="success" onClick={() => setApproveDialog({ id: p.row.id, status: 'approved' })}>Approve</Button>
+              <Button size="small" startIcon={<Cancel />} color="error" onClick={() => setApproveDialog({ id: p.row.id, status: 'rejected' })}>Reject</Button>
+            </>
+          )}
         </Box>
       ),
     },

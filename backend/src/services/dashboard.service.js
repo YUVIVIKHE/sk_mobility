@@ -6,6 +6,7 @@ const getSuperAdminDashboard = async () => {
     [statsRows],
     [monthlySales],
     [recentOrders],
+    [prevStats],
   ] = await Promise.all([
     db.query(`
       SELECT
@@ -20,7 +21,12 @@ const getSuperAdminDashboard = async () => {
         (SELECT COALESCE(SUM(balance), 0) FROM bank_accounts) AS total_bank_balance,
         (SELECT COALESCE(SUM(amount), 0) FROM office_expenses
           WHERE MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())) AS expenses_this_month,
-        (SELECT COALESCE(SUM(remaining_amount), 0) FROM loans WHERE status = 'active') AS total_outstanding_loans
+        (SELECT COALESCE(SUM(remaining_amount), 0) FROM loans WHERE status = 'active') AS total_outstanding_loans,
+        /* Current month counts */
+        (SELECT COUNT(*) FROM dealers WHERE status = 'approved' AND MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())) AS dealers_this_month,
+        (SELECT COUNT(*) FROM orders WHERE status='delivered' AND MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())) AS sold_this_month,
+        (SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='completed' AND MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())) AS revenue_this_month,
+        (SELECT COUNT(*) FROM leads WHERE MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())) AS leads_this_month
     `),
     db.query(`
       SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS orders, SUM(total_amount) AS revenue
@@ -31,10 +37,33 @@ const getSuperAdminDashboard = async () => {
       SELECT o.order_number, o.total_amount, o.status, d.business_name
       FROM orders o JOIN dealers d ON o.dealer_id = d.id ORDER BY o.created_at DESC LIMIT 10
     `),
+    // Previous month for trend comparison
+    db.query(`
+      SELECT
+        (SELECT COUNT(*) FROM dealers WHERE status='approved' AND MONTH(created_at)=MONTH(DATE_SUB(CURDATE(),INTERVAL 1 MONTH)) AND YEAR(created_at)=YEAR(DATE_SUB(CURDATE(),INTERVAL 1 MONTH))) AS dealers_prev,
+        (SELECT COUNT(*) FROM orders WHERE status='delivered' AND MONTH(created_at)=MONTH(DATE_SUB(CURDATE(),INTERVAL 1 MONTH)) AND YEAR(created_at)=YEAR(DATE_SUB(CURDATE(),INTERVAL 1 MONTH))) AS sold_prev,
+        (SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='completed' AND MONTH(created_at)=MONTH(DATE_SUB(CURDATE(),INTERVAL 1 MONTH)) AND YEAR(created_at)=YEAR(DATE_SUB(CURDATE(),INTERVAL 1 MONTH))) AS revenue_prev,
+        (SELECT COUNT(*) FROM leads WHERE MONTH(created_at)=MONTH(DATE_SUB(CURDATE(),INTERVAL 1 MONTH)) AND YEAR(created_at)=YEAR(DATE_SUB(CURDATE(),INTERVAL 1 MONTH))) AS leads_prev
+    `),
   ]);
 
-  return { stats: statsRows[0], monthlySales, recentOrders };
+  const calcTrend = (curr, prev) => {
+    if (!prev || prev === 0) return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 100);
+  };
+
+  const s = statsRows[0];
+  const p = prevStats[0];
+  const trends = {
+    dealers: calcTrend(s.dealers_this_month, p.dealers_prev),
+    vehicles_sold: calcTrend(s.sold_this_month, p.sold_prev),
+    revenue: calcTrend(Number(s.revenue_this_month), Number(p.revenue_prev)),
+    leads: calcTrend(s.leads_this_month, p.leads_prev),
+  };
+
+  return { stats: s, monthlySales, recentOrders, trends };
 };
+
 
 const getDealerDashboard = async (dealerId) => {
   const [stats] = await db.query(`

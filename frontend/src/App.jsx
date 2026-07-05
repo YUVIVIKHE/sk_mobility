@@ -7,6 +7,7 @@ import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DealersPage from './pages/DealersPage';
+import DealerDetailPage from './pages/DealerDetailPage';
 import VehiclesPage from './pages/VehiclesPage';
 import OrdersPage from './pages/OrdersPage';
 import PaymentsPage from './pages/PaymentsPage';
@@ -56,6 +57,7 @@ export default function App() {
 
           <Route element={<ProtectedRoute roles={['super_admin']} />}>
               <Route path="/dealers" element={<DealersPage />} />
+              <Route path="/dealers/:id" element={<DealerDetailPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/spare-parts" element={<SparePartsPage />} />
               <Route path="/billing" element={<BillingPage />} />

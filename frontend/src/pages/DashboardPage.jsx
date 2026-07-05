@@ -124,6 +124,7 @@ export default function DashboardPage() {
   }
 
   const stats = data?.stats || {};
+  const trends = data?.trends || {};
 
   const chartLabels = data?.monthlySales?.map((m) => {
     const [y, mo] = m.month.split('-');
@@ -240,16 +241,16 @@ export default function DashboardPage() {
         {isAdmin ? (
           <>
             <Grid item xs={12} sm={6} md={4} lg={2}>
-              <StatCard title="Total Dealers" value={stats.total_dealers || 0} icon={<Store sx={{ fontSize: 20 }} />} color="#6366f1" trend={8} />
+              <StatCard title="Total Dealers" value={stats.total_dealers || 0} icon={<Store sx={{ fontSize: 20 }} />} color="#6366f1" trend={trends.dealers} />
             </Grid>
             <Grid item xs={12} sm={6} md={4} lg={2}>
-              <StatCard title="Vehicles Sold" value={stats.total_vehicles_sold || 0} icon={<DirectionsCar sx={{ fontSize: 20 }} />} color="#10b981" trend={12} />
+              <StatCard title="Vehicles Sold" value={stats.total_vehicles_sold || 0} icon={<DirectionsCar sx={{ fontSize: 20 }} />} color="#10b981" trend={trends.vehicles_sold} />
             </Grid>
             <Grid item xs={12} sm={6} md={4} lg={2}>
-              <StatCard title="Total Revenue" value={`₹${Number(stats.total_revenue || 0).toLocaleString('en-IN')}`} icon={<AttachMoney sx={{ fontSize: 20 }} />} color="#f59e0b" trend={5} />
+              <StatCard title="Total Revenue" value={`₹${Number(stats.total_revenue || 0).toLocaleString('en-IN')}`} icon={<AttachMoney sx={{ fontSize: 20 }} />} color="#f59e0b" trend={trends.revenue} />
             </Grid>
             <Grid item xs={12} sm={6} md={4} lg={2}>
-              <StatCard title="Total Leads" value={stats.total_leads || 0} icon={<People sx={{ fontSize: 20 }} />} color="#3b82f6" trend={19} />
+              <StatCard title="Total Leads" value={stats.total_leads || 0} icon={<People sx={{ fontSize: 20 }} />} color="#3b82f6" trend={trends.leads} />
             </Grid>
             <Grid item xs={12} sm={6} md={4} lg={2}>
               <StatCard title="Service Requests" value={stats.service_requests || 0} icon={<Build sx={{ fontSize: 20 }} />} color="#8b5cf6" />
