@@ -1,21 +1,21 @@
 import {
   Box, Drawer, AppBar, Toolbar, Typography, ListItemButton, ListItemIcon,
   ListItemText, IconButton, Avatar, Menu, MenuItem, Badge, Divider,
-  useTheme, useMediaQuery, InputBase, alpha, Tooltip, Chip,
+  useTheme, useMediaQuery, InputBase, alpha, Tooltip, Chip, Paper, CircularProgress, List, ListItem,
 } from '@mui/material';
 import {
   Menu as MenuIcon, Dashboard, Store, DirectionsCar, ShoppingCart, Payment,
   Inventory, People, Build, Logout, Notifications, Receipt,
   AdminPanelSettings, Assessment, Handyman, Search, Settings, ElectricCar,
-  Groups, Handshake, AccountBalance, RequestQuote,
+  Groups, Handshake, AccountBalance, RequestQuote, Close,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useQuery } from '@tanstack/react-query';
 import { logout } from '../store/authSlice';
 import { useAuth, isSuperAdmin } from '../hooks/useAuth';
-import { notificationsAPI } from '../services';
+import { notificationsAPI, ordersAPI, dealersAPI, vehiclesAPI, leadsAPI } from '../services';
 
 const DRAWER_WIDTH = 240;
 
@@ -100,6 +100,83 @@ export default function MainLayout() {
   });
 
   const currentPage = allItems.find((m) => location.pathname.startsWith(m.path))?.text || 'SK Mobility';
+
+  // ── Global Search ─────────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchRef = useRef(null);
+  const searchBoxRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  const runSearch = useCallback(async (q) => {
+    if (!q || q.trim().length < 2) { setSearchResults([]); setSearchLoading(false); return; }
+    setSearchLoading(true);
+    try {
+      const [orders, dealers, vehicles, leads] = await Promise.allSettled([
+        ordersAPI.list({ search: q, limit: 3 }).then((r) => (r.data?.data || []).map((o) => ({ type: 'Order', label: o.order_number, sub: o.customer_name || o.business_name, path: '/orders', icon: '🛒' }))),
+        dealersAPI.list({ search: q, limit: 3 }).then((r) => (r.data?.data || []).map((d) => ({ type: 'Dealer', label: d.business_name, sub: d.contact_person, path: `/dealers/${d.id}`, icon: '🏪' }))),
+        vehiclesAPI.list({ search: q, limit: 3 }).then((r) => (r.data?.data || []).map((v) => ({ type: 'Vehicle', label: v.name, sub: v.category_name, path: '/vehicles', icon: '🛵' }))),
+        leadsAPI.list({ search: q, limit: 3 }).then((r) => (r.data?.data || []).map((l) => ({ type: 'Lead', label: l.customer_name, sub: l.customer_phone, path: '/leads', icon: '👤' }))),
+      ]);
+      const merged = [
+        ...(orders.status === 'fulfilled' ? orders.value : []),
+        ...(dealers.status === 'fulfilled' ? dealers.value : []),
+        ...(vehicles.status === 'fulfilled' ? vehicles.value : []),
+        ...(leads.status === 'fulfilled' ? leads.value : []),
+      ];
+      setSearchResults(merged);
+    } catch (_) {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  const handleSearchChange = (e) => {
+    const q = e.target.value;
+    setSearchQuery(q);
+    setSearchOpen(true);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (q.trim().length < 2) { setSearchResults([]); return; }
+    setSearchLoading(true);
+    debounceRef.current = setTimeout(() => runSearch(q), 350);
+  };
+
+  const handleResultClick = (path) => {
+    navigate(path);
+    setSearchQuery('');
+    setSearchOpen(false);
+    setSearchResults([]);
+  };
+
+  const clearSearch = () => { setSearchQuery(''); setSearchOpen(false); setSearchResults([]); };
+
+  // Ctrl+K / Cmd+K shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+        setSearchOpen(true);
+      }
+      if (e.key === 'Escape') clearSearch();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: SB.bg }}>
@@ -256,29 +333,89 @@ export default function MainLayout() {
             </IconButton>
           )}
 
-          {/* Search bar */}
-          <Box sx={{
-            display: 'flex', alignItems: 'center', gap: 1,
-            bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px',
-            px: 1.5, py: 0.7, flex: 1, maxWidth: 380,
-            transition: 'all 0.15s ease',
-            '&:focus-within': {
-              borderColor: '#0d9488',
-              boxShadow: '0 0 0 3px rgba(13,148,136,0.1)',
-              bgcolor: '#fff',
-            },
-          }}>
-            <Search sx={{ fontSize: 16, color: '#94a3b8', flexShrink: 0 }} />
-            <InputBase
-              placeholder="Search orders, dealers, ve..."
-              sx={{ fontSize: '13px', color: '#374151', flex: 1 }}
-              inputProps={{ 'aria-label': 'global search' }}
-            />
-            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', flexShrink: 0 }}>
-              <Typography sx={{ bgcolor: '#e2e8f0', color: '#94a3b8', px: 0.7, py: 0.1, borderRadius: '4px', fontSize: '10.5px', fontWeight: 600 }}>
-                ⌘K
-              </Typography>
+          {/* Search bar with live results */}
+          <Box ref={searchBoxRef} sx={{ position: 'relative', flex: 1, maxWidth: 420 }}>
+            <Box sx={{
+              display: 'flex', alignItems: 'center', gap: 1,
+              bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px',
+              px: 1.5, py: 0.7,
+              transition: 'all 0.15s ease',
+              '&:focus-within': {
+                borderColor: '#0d9488',
+                boxShadow: '0 0 0 3px rgba(13,148,136,0.1)',
+                bgcolor: '#fff',
+              },
+            }}>
+              {searchLoading
+                ? <CircularProgress size={14} sx={{ color: '#94a3b8', flexShrink: 0 }} />
+                : <Search sx={{ fontSize: 16, color: '#94a3b8', flexShrink: 0 }} />}
+              <InputBase
+                inputRef={searchRef}
+                placeholder="Search orders, dealers, vehicles..."
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
+                sx={{ fontSize: '13px', color: '#374151', flex: 1 }}
+                inputProps={{ 'aria-label': 'global search' }}
+              />
+              {searchQuery ? (
+                <IconButton size="small" onClick={clearSearch} sx={{ p: 0.25 }}>
+                  <Close sx={{ fontSize: 14, color: '#94a3b8' }} />
+                </IconButton>
+              ) : (
+                <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', flexShrink: 0 }}>
+                  <Typography sx={{ bgcolor: '#e2e8f0', color: '#94a3b8', px: 0.7, py: 0.1, borderRadius: '4px', fontSize: '10.5px', fontWeight: 600 }}>
+                    ⌘K
+                  </Typography>
+                </Box>
+              )}
             </Box>
+
+            {/* Results dropdown */}
+            {searchOpen && searchQuery.length >= 2 && (
+              <Paper elevation={8} sx={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+                borderRadius: '10px', overflow: 'hidden', zIndex: 9999,
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                maxHeight: 360, overflowY: 'auto',
+              }}>
+                {searchLoading ? (
+                  <Box py={2} textAlign="center">
+                    <CircularProgress size={20} sx={{ color: '#0d9488' }} />
+                  </Box>
+                ) : searchResults.length === 0 ? (
+                  <Box py={2.5} textAlign="center">
+                    <Typography sx={{ fontSize: 13, color: '#94a3b8' }}>No results for "{searchQuery}"</Typography>
+                  </Box>
+                ) : (
+                  <List dense disablePadding>
+                    {searchResults.map((r, i) => (
+                      <ListItem
+                        key={i}
+                        button
+                        onClick={() => handleResultClick(r.path)}
+                        sx={{
+                          px: 2, py: 1,
+                          '&:hover': { bgcolor: 'rgba(13,148,136,0.06)' },
+                          borderBottom: i < searchResults.length - 1 ? '1px solid #f8fafc' : 'none',
+                        }}
+                      >
+                        <Box sx={{ fontSize: 16, mr: 1.5, lineHeight: 1 }}>{r.icon}</Box>
+                        <Box flex={1} minWidth={0}>
+                          <Typography sx={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }} noWrap>{r.label}</Typography>
+                          {r.sub && <Typography sx={{ fontSize: 11, color: '#94a3b8' }} noWrap>{r.sub}</Typography>}
+                        </Box>
+                        <Chip label={r.type} size="small" sx={{ fontSize: 10, height: 18, ml: 1, flexShrink: 0 }} />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+                <Box sx={{ px: 2, py: 1, borderTop: '1px solid #f1f5f9', bgcolor: '#fafafa' }}>
+                  <Typography sx={{ fontSize: 11, color: '#94a3b8' }}>Press <strong>Esc</strong> to close · Results across orders, dealers, vehicles, leads</Typography>
+                </Box>
+              </Paper>
+            )}
           </Box>
 
           <Box flex={1} />

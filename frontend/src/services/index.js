@@ -107,11 +107,15 @@ export const billingAPI = {
 export const adminAPI = {
   users: (params) => api.get('/admin/users', { params }),
   createUser: (data) => api.post('/admin/users', data),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deactivateUser: (id) => api.patch(`/admin/users/${id}/deactivate`),
   roles: () => api.get('/admin/roles'),
   permissions: () => api.get('/admin/permissions'),
+  assignRolePermissions: (roleId, permissionIds) => api.put(`/admin/roles/${roleId}/permissions`, { permissionIds }),
   auditLogs: (params) => api.get('/admin/audit-logs', { params }),
   settings: () => api.get('/admin/settings'),
 };
+
 
 export const notificationsAPI = {
   list: (params) => api.get('/notifications', { params }),

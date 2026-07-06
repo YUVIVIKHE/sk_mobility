@@ -111,6 +111,8 @@ module.exports = {
   // Admin
   listUsers: wrap((req) => adminService.listUsers(req.query).then((data) => data)),
   createUser: wrap((req) => adminService.createUser(req.body, req).then((data) => ({ data }))),
+  updateUser: wrap((req) => adminService.updateUser(req.params.id, req.body, req).then(() => ({ data: { message: 'Updated' } }))),
+  toggleUserActive: wrap((req) => adminService.toggleUserActive(req.params.id, req).then((data) => ({ data }))),
   listRoles: wrap(() => adminService.listRoles().then((data) => ({ data }))),
   listPermissions: wrap(() => adminService.listPermissions().then((data) => ({ data }))),
   updateRolePermissions: wrap((req) => adminService.updateRolePermissions(req.params.id, req.body.permissionIds, req).then(() => ({ data: { message: 'Updated' } }))),

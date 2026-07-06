@@ -89,12 +89,15 @@ router.post('/bills/warranty', authorizeRoles('super_admin'), c.createWarrantyBi
 // Admin
 router.get('/admin/users', authorize('manage_users'), c.listUsers);
 router.post('/admin/users', authorize('manage_users'), c.createUser);
+router.put('/admin/users/:id', authorize('manage_users'), c.updateUser);
+router.patch('/admin/users/:id/deactivate', authorize('manage_users'), c.toggleUserActive);
 router.get('/admin/roles', authorize('manage_roles'), c.listRoles);
 router.get('/admin/permissions', authorize('manage_roles'), c.listPermissions);
 router.put('/admin/roles/:id/permissions', authorize('manage_roles'), c.updateRolePermissions);
 router.get('/admin/audit-logs', authorize('view_audit_logs'), c.listAuditLogs);
 router.get('/admin/settings', authorize('manage_settings'), c.getSettings);
 router.put('/admin/settings/:key', authorize('manage_settings'), c.updateSetting);
+
 
 // Notifications
 router.get('/notifications', c.listNotifications);
