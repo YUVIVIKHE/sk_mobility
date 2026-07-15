@@ -57,8 +57,8 @@ const createVehicle = async (data) => {
   const fullDescription = buildDescription(data);
 
   const [result] = await db.query(
-    `INSERT INTO vehicles (category_id, name, slug, brand, description, base_price)
-     VALUES (?,?,?,?,?,?)`,
+    `INSERT INTO vehicles (category_id, name, slug, brand, description, base_price, is_active)
+     VALUES (?,?,?,?,?,?,1)`,
     [data.categoryId, data.name, slug, data.brand || 'SK Mobility', fullDescription, data.basePrice]
   );
   return getVehicle(result.insertId);
@@ -84,8 +84,8 @@ const deleteVehicle = async (id) => {
 
 const createVariant = async (vehicleId, data) => {
   const [result] = await db.query(
-    `INSERT INTO vehicle_variants (vehicle_id, name, sku, color, price, battery_capacity_kwh, range_km, specifications)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO vehicle_variants (vehicle_id, name, sku, color, price, battery_capacity_kwh, range_km, specifications, is_active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     [vehicleId, data.name, data.sku, data.color, data.price, data.batteryCapacity, data.rangeKm,
      data.specifications ? JSON.stringify(data.specifications) : null]
   );

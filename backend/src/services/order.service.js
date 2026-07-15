@@ -46,6 +46,8 @@ const getById = async (id) => {
 };
 
 const listVariants = async () => {
+  // Activate any existing variants that have NULL is_active (legacy data before the fix)
+  await db.query('UPDATE vehicle_variants SET is_active = 1 WHERE is_active IS NULL');
   const [rows] = await db.query(
     `SELECT vv.id, vv.name, vv.sku, vv.price, vv.color, v.name AS vehicle_name
      FROM vehicle_variants vv JOIN vehicles v ON vv.vehicle_id = v.id
@@ -53,6 +55,7 @@ const listVariants = async () => {
   );
   return rows;
 };
+
 
 const create = async (data, userId, req) => {
   const orderType = data.orderType || 'dealer';
